@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management</title>
+    <script src="https://cdn.socket.io/4.3.1/socket.io.min.js"></script>
+</head>
+<body>
+    <h1>User Management</h1>
+    <!-- <video id="videoPlayer" controls autoplay></video>
+    <script>
+        const video = document.getElementById('videoPlayer');
+        video.src = "/video_feed";
+    </script> -->
+    <div id="video-container">
+        <img id="video-stream"></img>
+    </div>
+    <script>
+        const socket = io.connect();
+
+        const video = document.getElementById('video-stream');
+
+        socket.on('connect', () => {
+            console.log('Connected to server');
+        });
+
+        socket.on('disconnect', () => {
+            console.log('Disconnected from server');
+        });
+
+        socket.on('video_frame', (data) => {
+        // Create a new Image element to hold the frame
+        const img = new Image();
+        video.src = 'data:image/jpeg;base64,' + data.frame;
+        //console.log(data.frame);
+
+        // When the image is loaded, set the video element's source to the image
+        img.onload = () => {
+            video.srcObject = img;
+        };
+
+        // Error handling
+        img.onerror = (error) => {
+            console.error('Error loading image:', error);
+        };
+    });
+    </script>
+
+    <h2>All Users</h2>
+    <ul id="userList"></ul>
+    
+    <h2>Merge Users</h2>
+    <label for="user1Select">User 1:</label>
+    <select id="user1Select"></select><br>
+    <label for="user2Select">User 2:</label>
+    <select id="user2Select"></select><br>
+    <button onclick="mergeUsers()">Merge Users</button>
+    
+    <script>
+        function getAllUsers() {
+            fetch('/all_users')
+                .then(response => response.json())
+                .then(data => {
+                    const userList = document.getElementById('userList');
+                    userList.innerHTML = '';
+                    data.forEach(user => {
+                        const id = user[0], name = user[1];
+                        const listItem = document.createElement('li');
+                        let logIns = "";
+                        
+                        fetch(`/getLogins?id=${id}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            data.forEach((value)=>{
+                                logIns = logIns +' ,  ' + value
+                            })
+                            listItem.textContent = `ID: ${id}, Name: ${name},  ${logIns}`;
+                        })
+                        userList.appendChild(listItem);
+                        
+                        // Populate user selection dropdowns
+                        const user1Select = document.getElementById('user1Select');
+                        const user2Select = document.getElementById('user2Select');
+                        const option1 = document.createElement('option');
+                        option1.value = id;
+                        option1.textContent = name;
+                        const option2 = document.createElement('option');
+                        option2.value = id;
+                        option2.textContent = name;
+                        user1Select.appendChild(option1);
+                        user2Select.appendChild(option2);
+                    });
+                })
+                .catch(error => console.error('Error:', error));
+        }
+        
+        function mergeUsers() {
+            const user1Id = document.getElementById('user1Select').value;
+            const user2Id = document.getElementById('user2Select').value;
+            fetch('/merge_users', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    user1_id: user1Id,
+                    user2_id: user2Id
+                })
+            })
+            .then(response => response.json())
+            .then(data => console.log(data))
+            .catch(error => console.error('Error:', error));
+        }
+        
+        // Fetch all users when the page loads
+        window.onload = getAllUsers;
+    </script>
+</body>
+</html>
