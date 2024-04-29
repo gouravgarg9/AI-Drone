@@ -1,2 +1,4 @@
-./data/people/*
-./data/video/*
+./data
+./Weights/*
+.venv
+.idea
